@@ -1,0 +1,11 @@
+{
+  "name": "viral-tweet",
+  "version": "1.0.0",
+  "description": "archive of coronavirus related tweets and attachments",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

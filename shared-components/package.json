@@ -1,0 +1,11 @@
+{
+  "name": "shared-components",
+  "version": "1.0.0",
+  "description": "shared UI components and libraries used by twitter and weibo dApps",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
