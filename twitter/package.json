@@ -1,11 +1,21 @@
 {
-  "name": "viral-tweet",
-  "version": "1.0.0",
-  "description": "archive of coronavirus related tweets and attachments",
-  "main": "index.js",
+  "name": "blocked-tweets",
+  "private": true,
+  "version": "0.0.1",
+  "description": "blocked-tweets",
+  "license": "MIT",
+  "files": [
+    "dist/"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "stencil build",
+    "start": "stencil build --dev --watch --serve",
+    "test": "stencil test --spec --e2e",
+    "test.watch": "stencil test --spec --e2e --watch",
+    "generate": "stencil generate"
   },
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "@ionic/core": "^5.0.0",
+    "@stencil/core": "^1.8.8"
+  }
 }
