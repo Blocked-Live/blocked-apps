@@ -90,15 +90,15 @@ class WeiboServiceController {
     if (this.censoredHashtagStrings.length ==0 || forceRefresh) {
       var searchTags = [
         {name: "App-Name", value: "weibot-censored-hashtags"},
-        {name: "App-Version", value: "0.2.0"}
+        {name: "App-Version", value: "0.3.0"}
       ]
 
       var txids = await this.arweaveService.getTransactionsByTags(searchTags)
       var index = await this.arweaveService.getItemByTxId(txids[0])
 
-      //for these we just need the hashtag text (ht)
-      this.censoredHashtagStrings = index.data.unsearchable.map(ht =>  ht.ht)
-      this.censoredHashtags = index.data.unsearchable.map(ht => {return {hashtag: ht.ht, count: ht.n, censored: true}}).sort((a, b) => (b.count - a.count))
+      //note that the index is now an array of arrays... [[hashtag, count],[hashtag, count]]
+      this.censoredHashtagStrings = index.data.map(ht =>  ht[0])
+      this.censoredHashtags = index.data.map(ht => {return {hashtag: ht[0], count: ht[1], censored: true}}).sort((a, b) => (b.count - a.count))
     }
     return this.censoredHashtagStrings
   }
@@ -109,17 +109,19 @@ class WeiboServiceController {
     if (this.hashtagIndex.length ==0 || forceRefresh) {
       var searchTags = [
         {name: "App-Name", value: "weibot-search-index"},
-        {name: "App-Version", value: "0.2.0"},
+        {name: "App-Version", value: "0.3.0"},
         {name: "Search-Type", value: "hashtag"}
       ]
 
       var txids = await this.arweaveService.getTransactionsByTags(searchTags)
       var index = await this.arweaveService.getItemByTxId(txids[0])
+
+      //note that the index is now an array of arrays... [[hashtag, count],[hashtag, count]]
       this.hashtagIndex = index.data.map((ht) =>{
         return {
-          hashtag: ht.hashtag,
-          count: ht.count,
-          censored: this.censoredHashtagStrings.includes(ht.hashtag)
+          hashtag: ht[0],
+          count: ht[1],
+          censored: this.censoredHashtagStrings.includes(ht[0])
         }
       } ) //this forces any UI state bound to this array to refresh
     }
