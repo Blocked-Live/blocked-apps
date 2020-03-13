@@ -1,5 +1,6 @@
 import  { BehaviorSubject } from 'rxjs';
 import { ArweaveService } from './arweave.service';
+import { environment } from '../helpers/environment';
 
 class WeiboServiceController {
 
@@ -9,6 +10,10 @@ class WeiboServiceController {
 
   public hashtagIndex = []
   public hashtagIndex$ = new BehaviorSubject<any>([])
+
+  public censoredPostIndex = []
+  public censoredPostIndex$ = new BehaviorSubject<any>([])
+
 
   public postTxids = []
   public posts = []
@@ -28,6 +33,32 @@ class WeiboServiceController {
       post = await this.arweaveService.getItemRaw(txid)
     }
     return post;
+  }
+
+
+  //gets an index of txids, removal type, and last time we checked for all posts
+  //in the archive that are deleted or shadowbanned
+  async getCensoredPostIndex(offset, limit, forceRefresh = false) {
+    if (this.censoredPostIndex.length == 0 || forceRefresh) {
+      var searchTags = [
+        {name: "App-Name", value: "weibot-censored-posts"},
+        {name: "App-Version", value: environment.appVersion}
+      ]
+
+      var txids = await this.arweaveService.getTransactionsByTags(searchTags)
+      var index = await this.arweaveService.getItemByTxId(txids[0])
+
+      //note that the index is now an array of arrays... [[hashtag, count],[hashtag, count]]
+      this.censoredPostIndex = index.data.map((ht) =>{
+          return {
+            txid: ht[0],
+            lastUpdate: ht[1],
+            censoredType: ht[2]
+          }
+        }) //this forces any UI state bound to this array to refresh
+    }
+    this.censoredPostIndex$.next(this.censoredPostIndex.slice(offset, limit + offset))
+
   }
 
   //Loads the selected range of transactions from this.postTxids
@@ -50,7 +81,6 @@ class WeiboServiceController {
     this.posts$.next(this.posts)
     var customTags = [
       {name:"App-Name", value: "weibot-search-weibs"},
-      {name: "App-Version", value: "0.2.0"},
       {name: hashtag, value: 1}
     ]
     this.postTxids = await this.arweaveService.getTransactionsByTags(customTags)
@@ -71,7 +101,6 @@ class WeiboServiceController {
     this.posts$.next(this.posts)
     var customTags = [
       {name:"App-Name", value: "weibot-search-weibs"},
-      {name: "App-Version", value: "0.2.0"},
       {name: "Search-Tx", value: txid}
     ]
     this.postTxids = await this.arweaveService.getTransactionsByTags(customTags)
@@ -90,7 +119,7 @@ class WeiboServiceController {
     if (this.censoredHashtagStrings.length ==0 || forceRefresh) {
       var searchTags = [
         {name: "App-Name", value: "weibot-censored-hashtags"},
-        {name: "App-Version", value: "0.3.0"}
+        {name: "App-Version", value: environment.appVersion}
       ]
 
       var txids = await this.arweaveService.getTransactionsByTags(searchTags)
@@ -102,14 +131,13 @@ class WeiboServiceController {
     }
     return this.censoredHashtagStrings
   }
-
   async getHashtagIndex(offset, limit, forceRefresh = false) {
     await this.getCensoredHashtags();
 
     if (this.hashtagIndex.length ==0 || forceRefresh) {
       var searchTags = [
         {name: "App-Name", value: "weibot-search-index"},
-        {name: "App-Version", value: "0.3.0"},
+        {name: "App-Version", value: environment.appVersion},
         {name: "Search-Type", value: "hashtag"}
       ]
 
@@ -134,7 +162,7 @@ class WeiboServiceController {
       if (forceRefresh || this.hashtagtxids.length == 0) {  
         var searchTags = [
           {name:"App-Name", value: "weibot-search"},
-          {name: "App-Version", value: "0.2.0"},
+          {name: "App-Version", value: environment.appVersion},
           {name: "Search-Type", value: "hashtag"}
         ]
         this.hashtagtxids = await this.arweaveService.getTransactionsByTags(searchTags)

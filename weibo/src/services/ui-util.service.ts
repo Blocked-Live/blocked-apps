@@ -31,6 +31,15 @@ class UIController {
         this.currentModal.dismiss().then(() => { this.currentModal = null; });
         }
     }
+
+    linkifyHashtags(text, baseUrl) {
+      let hashTagRegex = /#(.*?)#/gum;
+      let hashTags = text.match(hashTagRegex) || []
+      hashTags.forEach(hashtag => {
+        text = text.replace(hashtag, `<a href=${baseUrl}${hashtag}>${hashtag}</a>`)
+      })
+      return text
+    }
 }
 
 export const UI = new UIController()

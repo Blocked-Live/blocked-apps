@@ -1,5 +1,5 @@
 import  { BehaviorSubject } from 'rxjs';
-import {environment} from '../helpers/environment';
+// import {environment} from '../helpers/environment';
 
 //this library is awesome, highly recommend it! https://www.npmjs.com/package/arql-ops
 import {and, equals} from 'arql-ops'; 
@@ -138,7 +138,7 @@ export class ArweaveService {
     }, {retries: 10})
     return txids
   }
-
+  /*
   async getCollection(collectionId, customTags?) {
     var results = []
 
@@ -193,7 +193,8 @@ export class ArweaveService {
     console.log("success: the collection has been downloaded from the blockchain")
 
     return results
-  }
+  } */
+
   /*
   async getAllChannels() {
     this._allChannels= []

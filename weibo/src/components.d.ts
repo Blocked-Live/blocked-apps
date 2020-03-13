@@ -26,7 +26,11 @@ export namespace Components {
   interface UserAddTags {
     'prompt': string;
   }
+  interface WeiboCensoredPosts {}
   interface WeiboPost {
+    'censored': boolean;
+    'censorshipStatus': any;
+    'displayMode': string;
     'downloadFromBlockchain': boolean;
     'text': string;
     'txid': string;
@@ -78,6 +82,12 @@ declare global {
     new (): HTMLUserAddTagsElement;
   };
 
+  interface HTMLWeiboCensoredPostsElement extends Components.WeiboCensoredPosts, HTMLStencilElement {}
+  var HTMLWeiboCensoredPostsElement: {
+    prototype: HTMLWeiboCensoredPostsElement;
+    new (): HTMLWeiboCensoredPostsElement;
+  };
+
   interface HTMLWeiboPostElement extends Components.WeiboPost, HTMLStencilElement {}
   var HTMLWeiboPostElement: {
     prototype: HTMLWeiboPostElement;
@@ -102,6 +112,7 @@ declare global {
     'sharing-utensil': HTMLSharingUtensilElement;
     'single-post-viewer': HTMLSinglePostViewerElement;
     'user-add-tags': HTMLUserAddTagsElement;
+    'weibo-censored-posts': HTMLWeiboCensoredPostsElement;
     'weibo-post': HTMLWeiboPostElement;
     'weibo-posts': HTMLWeiboPostsElement;
     'weibo-viewer': HTMLWeiboViewerElement;
@@ -125,7 +136,11 @@ declare namespace LocalJSX {
   interface UserAddTags {
     'prompt'?: string;
   }
+  interface WeiboCensoredPosts {}
   interface WeiboPost {
+    'censored'?: boolean;
+    'censorshipStatus'?: any;
+    'displayMode'?: string;
     'downloadFromBlockchain'?: boolean;
     'text'?: string;
     'txid'?: string;
@@ -144,6 +159,7 @@ declare namespace LocalJSX {
     'sharing-utensil': SharingUtensil;
     'single-post-viewer': SinglePostViewer;
     'user-add-tags': UserAddTags;
+    'weibo-censored-posts': WeiboCensoredPosts;
     'weibo-post': WeiboPost;
     'weibo-posts': WeiboPosts;
     'weibo-viewer': WeiboViewer;
@@ -162,6 +178,7 @@ declare module "@stencil/core" {
       'sharing-utensil': LocalJSX.SharingUtensil & JSXBase.HTMLAttributes<HTMLSharingUtensilElement>;
       'single-post-viewer': LocalJSX.SinglePostViewer & JSXBase.HTMLAttributes<HTMLSinglePostViewerElement>;
       'user-add-tags': LocalJSX.UserAddTags & JSXBase.HTMLAttributes<HTMLUserAddTagsElement>;
+      'weibo-censored-posts': LocalJSX.WeiboCensoredPosts & JSXBase.HTMLAttributes<HTMLWeiboCensoredPostsElement>;
       'weibo-post': LocalJSX.WeiboPost & JSXBase.HTMLAttributes<HTMLWeiboPostElement>;
       'weibo-posts': LocalJSX.WeiboPosts & JSXBase.HTMLAttributes<HTMLWeiboPostsElement>;
       'weibo-viewer': LocalJSX.WeiboViewer & JSXBase.HTMLAttributes<HTMLWeiboViewerElement>;
