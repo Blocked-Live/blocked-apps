@@ -22,7 +22,7 @@ export class WeiboPostsCensored {
     //this.hashtag = WeiboService.getHashtagByTxid(this.searchTxId).data.query
     WeiboService.censoredPostIndex$.subscribe((censoredPostIndex) => {
 
-      this.postIndex = [...censoredPostIndex];
+      this.postIndex = [...this.postIndex.concat(censoredPostIndex)];
       console.log("displaying "+this.postIndex.length+" posts")
       if (this.postIndex.length > 0)
         this.setLoading(false)

@@ -28,9 +28,9 @@ export class Data {
         <p>Governments and the WHO have responded by asking social media platforms to remove content related to the virus that does not 
         align with the official statements made by politicians and health authorities around the world. The Blocked Twitter archive aims to capture a 
         definitive history of these crazy times - and to save lives by ensuring that information flows freely in spite of misguided attempts 
-        to prevent this. Please follow us below for early access, coming by the end of this week (March 13th)</p>
+        to prevent this. Please follow us below for early access!</p>
 
-        <p>All parts of the platform are open source software and we welcome new collaborators! <a target="_blank" href="https://github.com/Blocked-Live/blocked-platform">https://github.com/Blocked-Live/blocked-platform</a></p>
+        <p>This is an open source project and we welcome new collaborators! <a target="_blank" href="https://github.com/Blocked-Live/blocked-apps">https://github.com/Blocked-Live/blocked-apps</a></p>
         
         <h3>Learn More</h3>
         
