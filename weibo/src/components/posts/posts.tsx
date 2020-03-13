@@ -89,7 +89,7 @@ export class WeiboPosts {
         {
         this.posts.map((post) => {
           return (
-            <weibo-post downloadFromBlockchain={false} text={post.tags["Text"]} txid={post.id} />
+            <weibo-post censored={post.tags["CENSORSHIP"] != null} downloadFromBlockchain={false} text={post.tags["Text"]} txid={post.id} />
           )
         })
       }

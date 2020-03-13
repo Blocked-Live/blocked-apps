@@ -40,27 +40,30 @@ class WeiboServiceController {
   //in the archive that are deleted or shadowbanned
   async getCensoredPostIndex(offset, limit, forceRefresh = false) {
     if (this.censoredPostIndex.length == 0 || forceRefresh) {
-      var searchTags = [
-        {name: "App-Name", value: "weibot-censored-posts"},
-        {name: "App-Version", value: environment.appVersion}
-      ]
-
-      var txids = await this.arweaveService.getTransactionsByTags(searchTags)
-      var index = await this.arweaveService.getItemByTxId(txids[0])
-
-      //note that the index is now an array of arrays... [[hashtag, count],[hashtag, count]]
-      this.censoredPostIndex = index.data.map((ht) =>{
-          return {
-            txid: ht[0],
-            lastUpdate: ht[1],
-            censoredType: ht[2]
-          }
-        }) //this forces any UI state bound to this array to refresh
+      await this.generateCensoredPostIndex()
     }
     this.censoredPostIndex$.next(this.censoredPostIndex.slice(offset, limit + offset))
-
+    //return this.censoredPostIndex
   }
 
+  async generateCensoredPostIndex() {
+    var searchTags = [
+      {name: "App-Name", value: "weibot-censored-posts"},
+      {name: "App-Version", value: environment.appVersion}
+    ]
+
+    var txids = await this.arweaveService.getTransactionsByTags(searchTags)
+    var index = await this.arweaveService.getItemByTxId(txids[0])
+
+    //note that the index is now an array of arrays... [[hashtag, count],[hashtag, count]]
+    this.censoredPostIndex = index.data.map((ht) =>{
+        return {
+          txid: ht[0],
+          lastUpdate: ht[1],
+          censoredType: ht[2]
+        }
+      }) //this forces any UI state bound to this array to refresh
+  }
   //Loads the selected range of transactions from this.postTxids
   //Useful for paging and other situations where you've already loaded the txids
   //as it lets you avoid making another arql request
@@ -87,33 +90,24 @@ class WeiboServiceController {
 
     var txToRetrieve = this.postTxids.slice(offset, limit+offset)
 
-    for (var i =0; i< txToRetrieve.length; i++) {
-      var tx = await this.arweaveService.getItemRaw(txToRetrieve[i])
-      this.posts.push(tx)
-      //this.posts$.next(tx)
-    }
-    this.posts$.next(this.posts)
-  }
+    //if we don't have the censored post ids, get them now
+    if (this.censoredPostIndex.length == 0)
+      await this.generateCensoredPostIndex
 
-  //searchtxid is the id of, for example, a hashtag in the hashtags[] array
-  async getPostsBySearchTxid(txid, offset, limit) {
-    this.posts = []
-    this.posts$.next(this.posts)
-    var customTags = [
-      {name:"App-Name", value: "weibot-search-weibs"},
-      {name: "Search-Tx", value: txid}
-    ]
-    this.postTxids = await this.arweaveService.getTransactionsByTags(customTags)
-
-    var txToRetrieve = this.postTxids.slice(offset, limit)
 
     for (var i =0; i< txToRetrieve.length; i++) {
       var tx = await this.arweaveService.getItemRaw(txToRetrieve[i])
+      var isCensored = this.censoredPostIndex.filter(cp => cp.txid == txToRetrieve[i]).length > 0
+      tx.tags["CENSORSHIP"] = isCensored ? this.censoredPostIndex.filter(cp => cp.txid == txToRetrieve[i])[0] : null
+      
+
       this.posts.push(tx)
       //this.posts$.next(tx)
     }
+
     this.posts$.next(this.posts)
   }
+
 
   async getCensoredHashtags(forceRefresh=false) {
     if (this.censoredHashtagStrings.length ==0 || forceRefresh) {
@@ -152,6 +146,11 @@ class WeiboServiceController {
           censored: this.censoredHashtagStrings.includes(ht[0])
         }
       } ) //this forces any UI state bound to this array to refresh
+
+      //a good time to prefetch the censored post index, if we don't have it
+      if (this.censoredPostIndex.length == 0) 
+        this.generateCensoredPostIndex() //runs in parallel
+
     }
     this.hashtagIndex$.next(this.hashtagIndex.slice(offset, limit + offset))
   }
