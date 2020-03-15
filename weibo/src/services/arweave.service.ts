@@ -99,12 +99,11 @@ export class ArweaveService {
     return element
   }
 
-    //returns the tx as is, no decoding
+  //returns the tx as is, no decoding
   async getTagsOnly(txid) {
-    var tx = await carrierPigeon.getTransaction(txid, "tags")
-    var tags = {}
-
-    tx.get('tags').forEach(tag => {
+    var tags={}
+    var encodedTags = await carrierPigeon.getTags(txid)
+    encodedTags.forEach(tag => {
       let key = tag.get('name', {decode: true, string: true});
       let value = tag.get('value', {decode: true, string: true});
       console.log(`${key} : ${value}`);

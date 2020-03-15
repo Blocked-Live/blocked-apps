@@ -160,17 +160,35 @@ export default {
             console.log("carrier piegon: fail on /arql: "+e)
         }
     },
-    async getTransaction(txid, partToGet="all") {
+    async getTransaction(txid) {
         try {
-            var response = await fetch(`${environment.endpoints.carrierPigeonUrl}/tx/${txid}?part=${partToGet}`, {
+            var response = await fetch(`${environment.endpoints.carrierPigeonUrl}/tx/${txid}?part=all`, {
                 method: 'GET'
             })
             var json = await response.json()
+            
             return new Transaction(json)
         }
         catch(e) {
             console.log("carrier piegon: fail on /tx: "+e)
         }
-    }
-    
+    },
+    async getTags(txid) {
+      try {
+          var response = await fetch(`${environment.endpoints.carrierPigeonUrl}/tx/${txid}?part=tags`, {
+              method: 'GET'
+          })
+          var json = await response.json()
+        
+          var tags = []
+
+          json.forEach(tag => {
+            tags.push(new Tag(tag.name, tag.value))
+          })
+          return tags
+      }
+      catch(e) {
+          console.log("carrier piegon: fail on /tx: "+e)
+      }
+  }
 }
