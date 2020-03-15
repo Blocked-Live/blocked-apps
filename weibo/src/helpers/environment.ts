@@ -8,7 +8,8 @@ export const environment = {
       },
       endpoints : {
         socialServerUrl: "https://weibo.censorship.online/sharing",
-        userSuggestionApi : " https://weibo.censorship.online/suggest"
+        userSuggestionApi : " https://weibo.censorship.online/suggest",
+        carrierPigeonUrl: "http://localhost:3000"
       },
       appVersion: "0.3.0"
   };

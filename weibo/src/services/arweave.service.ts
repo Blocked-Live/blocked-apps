@@ -1,4 +1,6 @@
 import  { BehaviorSubject } from 'rxjs';
+import carrierPigeon from './carrier-pigeon';
+
 // import {environment} from '../helpers/environment';
 
 //this library is awesome, highly recommend it! https://www.npmjs.com/package/arql-ops
@@ -97,9 +99,28 @@ export class ArweaveService {
     return element
   }
 
+    //returns the tx as is, no decoding
+  async getTagsOnly(txid) {
+    var tx = await carrierPigeon.getTransaction(txid, "tags")
+    var tags = {}
+
+    tx.get('tags').forEach(tag => {
+      let key = tag.get('name', {decode: true, string: true});
+      let value = tag.get('value', {decode: true, string: true});
+      console.log(`${key} : ${value}`);
+      tags[key]=value
+    });
+
+    var element = {id: txid, data: null, tags: tags}
+    return element
+  }
+
+
+
   async getItemByTxId(txid) {
     //utility funciton to get the data and tags corresponding to an arweave transaction
-    var tx = await this.arweaveSdk.transactions.get(txid)
+    //var tx = await this.arweaveSdk.transactions.get(txid)
+    var tx = await carrierPigeon.getTransaction(txid)
 
     //the data only - not the tags
     var rawData = JSON.parse(tx.get('data', {decode: true, string: true}))
@@ -127,7 +148,9 @@ export class ArweaveService {
         ...arrayOfCustomTags.map(tag => equals(tag.name, tag.value.toString()))
       )
 
-      txids = await this.arweaveSdk.arql(query)
+      //txids = await this.arweaveSdk.arql(query)
+      txids = await carrierPigeon.arql(query)
+
       console.log("retrieved "+txids.length+" transaction ids matching your query")
       /*
       if (txids.length == 0)
@@ -138,7 +161,43 @@ export class ArweaveService {
     }, {retries: 10})
     return txids
   }
-  /*
+
+  //Main wallet decryption function
+  loginWithWalletString(walletJson: any) {
+    try {
+       var wallet = JSON.parse(walletJson)
+       this.arweaveSdk.wallets.jwkToAddress(wallet).then((address) => {
+           this.arweaveSdk.wallets.getBalance(address).then((balance)=> {
+            this._currentWallet = {address: address, balance: balance, keystore: wallet, rawJson: JSON.stringify(wallet, null, 2)}
+            this.currentWallet$.next(this._currentWallet)
+      
+            if (balance < 100000) {
+              console.log("Balance extremely low, app may not work. Visit tokens.arweave.org and get a new wallet + 1.00000 AR in free tokens")
+            }      
+          })
+       })
+    } catch (err) {
+      console.log(JSON.stringify(err, null, 2))
+      alert("Not an Arweave wallet file! Visit tokens.arweave.org and get a new wallet + 1.00000 AR in free tokens")
+    }
+  }
+
+  //If the user has uploaded their wallet using an HTML file input
+  loginWithWalletFile(jsonFile: File) {
+    const reader = new FileReader()
+    reader.readAsText(jsonFile)
+    reader.onloadend = () => {
+        this.loginWithWalletString(reader.result)
+    }
+  }
+
+  getNetworkStatus(callback) {
+    this.arweaveSdk.network.getInfo().then(info => callback(info))
+  }
+}
+
+  /* old hackathon code, snippets may be useful
+
   async getCollection(collectionId, customTags?) {
     var results = []
 
@@ -245,41 +304,3 @@ export class ArweaveService {
       console.log(JSON.stringify(response))
     }
   }*/
-
-  //Main wallet decryption function
-  loginWithWalletString(walletJson: any) {
-    try {
-       var wallet = JSON.parse(walletJson)
-       this.arweaveSdk.wallets.jwkToAddress(wallet).then((address) => {
-           this.arweaveSdk.wallets.getBalance(address).then((balance)=> {
-            this._currentWallet = {address: address, balance: balance, keystore: wallet, rawJson: JSON.stringify(wallet, null, 2)}
-            this.currentWallet$.next(this._currentWallet)
-      
-            if (balance < 100000) {
-              console.log("Balance extremely low, app may not work. Visit tokens.arweave.org and get a new wallet + 1.00000 AR in free tokens")
-            }      
-          })
-       })
-    } catch (err) {
-      console.log(JSON.stringify(err, null, 2))
-      alert("Not an Arweave wallet file! Visit tokens.arweave.org and get a new wallet + 1.00000 AR in free tokens")
-    }
-  }
-
-  //If the user has uploaded their wallet using an HTML file input
-  loginWithWalletFile(jsonFile: File) {
-    const reader = new FileReader()
-    reader.readAsText(jsonFile)
-    reader.onloadend = () => {
-        this.loginWithWalletString(reader.result)
-    }
-  }
-
-  getNetworkStatus(callback) {
-    this.arweaveSdk.network.getInfo().then(info => callback(info))
-  }
-
-
-
-
-}

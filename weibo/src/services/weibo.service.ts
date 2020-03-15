@@ -30,7 +30,7 @@ class WeiboServiceController {
   async getPostByTxid(txid: string): Promise<any> {
     var post = this.posts.find(p => p.txid == txid)
     if (!post) {
-      post = await this.arweaveService.getItemRaw(txid)
+      post = await this.arweaveService.getTagsOnly(txid)
     }
     return post;
   }
@@ -71,7 +71,7 @@ class WeiboServiceController {
     var txToRetrieve = this.postTxids.slice(offset, limit+offset)
 
     for (var i =0; i< txToRetrieve.length; i++) {
-      var tx = await this.arweaveService.getItemRaw(txToRetrieve[i])
+      var tx = await this.arweaveService.getTagsOnly(txToRetrieve[i])
       this.posts.push(tx)
       //this.posts$.next(tx)
     }
@@ -96,10 +96,10 @@ class WeiboServiceController {
 
 
     for (var i =0; i< txToRetrieve.length; i++) {
-      var tx = await this.arweaveService.getItemRaw(txToRetrieve[i])
+      var tx = await this.arweaveService.getTagsOnly(txToRetrieve[i])
       var isCensored = this.censoredPostIndex.filter(cp => cp.txid == txToRetrieve[i]).length > 0
       tx.tags["CENSORSHIP"] = isCensored ? this.censoredPostIndex.filter(cp => cp.txid == txToRetrieve[i])[0] : null
-      
+
 
       this.posts.push(tx)
       //this.posts$.next(tx)
