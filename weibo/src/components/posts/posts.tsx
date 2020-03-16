@@ -19,27 +19,29 @@ export class WeiboPosts {
   @State() offset = 0; //start index for sequential paging
 
   _loadingController = null
+  componentWillLoad() {
+    this.decodedHashtag = decodeURIComponent(this.hashtag)
 
+  }
   componentDidLoad() {
+
     this.setLoading(true)
     //this.hashtag = WeiboService.getHashtagByTxid(this.searchTxId).data.query
-    WeiboService.posts$.subscribe((postsForHashtag) => {
+    WeiboService.getPostHashtagIndex(this.decodedHashtag,this.offset, pageSize).subscribe((postsForHashtag) => {
 
-      this.posts = [...postsForHashtag];
+      this.posts = [...this.posts.concat(postsForHashtag)];
       console.log("displaying "+this.posts.length+" posts")
       if (this.posts.length > 0)
         this.setLoading(false)
     })
-    this.decodedHashtag = decodeURIComponent(this.hashtag)
-    WeiboService.getPostsByHashtag(this.decodedHashtag, this.offset, pageSize)
   }
   getNextPage() {
     this.setLoading(true)
     this.offset += pageSize;
-    WeiboService.getPostsForCurrentHashtag(this.offset, pageSize)
+    WeiboService.getPostHashtagIndex(this.decodedHashtag,this.offset, pageSize)  
   }
   viewMoreDisplayState() {
-    if (this.posts.length > 0 && this.posts.length < WeiboService.postTxids.length)
+    if (this.posts.length > 0 && this.posts.length <= WeiboService.postHashtagIndex[this.decodedHashtag].posts.length)
       return ""
     else
       return "viewMoreHidden"
@@ -72,28 +74,31 @@ export class WeiboPosts {
           </ion-buttons>
           <ion-title>{this.decodedHashtag}</ion-title>
         </ion-toolbar>
-
-        <ion-toolbar class={this.posts.length > 0 ? "" : "hidden"}>
-          <ion-title>Loaded {this.posts.length} of {WeiboService.postTxids.length} Posts</ion-title>
+        <ion-toolbar>
+        {this.posts.length > 0 ? 
+                  <ion-title>Loaded {this.posts.length} of {WeiboService.postHashtagIndex[this.decodedHashtag].posts.length} Posts</ion-title>
+                  :
+                  <ion-title>Loading... Please Wait</ion-title>
+        }
         </ion-toolbar>
-        <ion-toolbar class={this.posts.length > 0 ? "hidden" : ""}>
-          <ion-title>Loading... Please Wait</ion-title>
-        </ion-toolbar>
-
       </ion-header>,
   
       <ion-content  class="ion-padding">
 
-
+      {
+      this.posts.length>0 ?   
       <div class="posts-container">
         {
         this.posts.map((post) => {
           return (
-            <weibo-post censored={post.tags["CENSORSHIP"] != null} downloadFromBlockchain={false} text={post.tags["Text"]} txid={post.id} />
+            <weibo-post censored={post.isCensored} downloadFromBlockchain={false} displayMode="thumbnail" txid={post.txid} />
           )
         })
       }
       </div>
+      :""
+      }
+
       <ion-button disabled={this.loading} 
       class={this.viewMoreDisplayState()} 
       onClick={(e) => {this.getNextPage(); console.log(e); return false}} 

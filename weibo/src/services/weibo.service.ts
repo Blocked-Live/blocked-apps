@@ -14,10 +14,8 @@ class WeiboServiceController {
   public censoredPostIndex = []
   public censoredPostIndex$ = new BehaviorSubject<any>([])
 
-
-  public postTxids = []
+  public postHashtagIndex = {}  //tagname: {posts: [{id, isCensored}], posts$}
   public posts = []
-  public posts$ = new BehaviorSubject<any>([])
 
   private arweaveService: ArweaveService = ArweaveService.defaultInstance
 
@@ -33,6 +31,21 @@ class WeiboServiceController {
       post = await this.arweaveService.getTagsOnly(txid)
     }
     return post;
+  }
+
+  getPostHashtagIndex(hashtag, offset, limit, forceRefresh = 0) {
+    var index = this.postHashtagIndex[hashtag]
+    if (!index) {
+      this.postHashtagIndex[hashtag] = {posts: [], posts$: new BehaviorSubject<any>([])}
+      index = this.postHashtagIndex[hashtag] 
+    }
+
+    if (index.posts.length == 0 || forceRefresh) {
+      this.generatePostIndexForHashtag(hashtag, offset, limit) //spins off a thread to get the data, which will update the observable when complete
+    } else {
+      index.posts$.next(index.posts.slice(offset, limit + offset))
+    }
+    return index.posts$
   }
 
 
@@ -64,48 +77,25 @@ class WeiboServiceController {
         }
       }) //this forces any UI state bound to this array to refresh
   }
-  //Loads the selected range of transactions from this.postTxids
-  //Useful for paging and other situations where you've already loaded the txids
-  //as it lets you avoid making another arql request
-  async getPostsForCurrentHashtag(offset, limit) {
-    var txToRetrieve = this.postTxids.slice(offset, limit+offset)
-
-    for (var i =0; i< txToRetrieve.length; i++) {
-      var tx = await this.arweaveService.getTagsOnly(txToRetrieve[i])
-      this.posts.push(tx)
-      //this.posts$.next(tx)
-    }
-    this.posts$.next(this.posts)
-  }
-
-  //get post txs tagged with an arbitrary string
-  async getPostsByHashtag(hashtag, offset, limit) {
-    this.posts = []
-    this.posts$.next(this.posts)
+  //get post ids for a hashtag, and cross-reference with the censored post index
+  async generatePostIndexForHashtag(hashtag, offset, limit) {
     var customTags = [
       {name:"App-Name", value: "weibot-search-weibs"},
       {name: hashtag, value: 1}
     ]
-    this.postTxids = await this.arweaveService.getTransactionsByTags(customTags)
-
-    var txToRetrieve = this.postTxids.slice(offset, limit+offset)
-
-    //if we don't have the censored post ids, get them now
+    var postTxIds = await this.arweaveService.getTransactionsByTags(customTags)
+    
     if (this.censoredPostIndex.length == 0)
       await this.generateCensoredPostIndex
 
+    this.postHashtagIndex[hashtag].posts = postTxIds.map(id => {
+      return {
+        txid: id,
+        isCensored: this.censoredPostIndex.filter(cp => cp.txid == id).length > 0
+      }
+    })
+    this.postHashtagIndex[hashtag].posts$.next(this.postHashtagIndex[hashtag].posts.slice(offset, limit + offset))
 
-    for (var i =0; i< txToRetrieve.length; i++) {
-      var tx = await this.arweaveService.getTagsOnly(txToRetrieve[i])
-      var isCensored = this.censoredPostIndex.filter(cp => cp.txid == txToRetrieve[i]).length > 0
-      tx.tags["CENSORSHIP"] = isCensored ? this.censoredPostIndex.filter(cp => cp.txid == txToRetrieve[i])[0] : null
-
-
-      this.posts.push(tx)
-      //this.posts$.next(tx)
-    }
-
-    this.posts$.next(this.posts)
   }
 
 
@@ -154,6 +144,24 @@ class WeiboServiceController {
     }
     this.hashtagIndex$.next(this.hashtagIndex.slice(offset, limit + offset))
   }
+
+  //Loads the selected range of transactions from this.postTxids
+  //Useful for paging and other situations where you've already loaded the txids
+  //as it lets you avoid making another arql request
+
+  /*
+  async getPostsForCurrentHashtag(offset, limit) {
+    var txToRetrieve = this.postTxids.slice(offset, limit+offset)
+
+    for (var i =0; i< txToRetrieve.length; i++) {
+      var tx = await this.arweaveService.getTagsOnly(txToRetrieve[i])
+      this.posts.push(tx)
+      //this.posts$.next(tx)
+    }
+    this.posts$.next(this.posts)
+  } */
+
+
   /* deprecated: use getHashtagIndex
   async getHashtags(offset, limit, forceRefresh = false) {
       //in most use cases, we will only want to get the list of all hashtag txids once per session

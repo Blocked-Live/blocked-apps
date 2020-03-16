@@ -35,7 +35,7 @@ export class Post {
       return (
           
           <ion-card>        
-            <a target="_blank" href={txurl+this.txid}>
+            <a target="_blank" href={"https://arweave.net/"+this.txid}>
               <img alt="Screenshot of Weibo post" src={"https://arweave.net/"+this.txid} />
             </a> 
             {
@@ -65,7 +65,7 @@ export class Post {
   else
       return (
         <ion-card>        
-        <a href={posturl+this.txid}>
+        <a href={"#/censored-posts/"+this.txid}>
           <img alt="Screenshot of Weibo post" src={"https://arweave.net/"+this.txid} />
         </a> 
 
