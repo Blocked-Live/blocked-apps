@@ -11,7 +11,8 @@ const pageSize = 20
 export class WeiboPosts {
   @State() posts = []
   @State() loading = false
-  
+  @State() onlyShowCensored = false
+
   @Prop() hashtag = ''
 
   @State() decodedHashtag='' //the hashtag passed in the URL, after decoding
@@ -35,17 +36,49 @@ export class WeiboPosts {
         this.setLoading(false)
     })
   }
+
+  toggleCensoredFilter() {
+    this.posts.length = 0
+    this.offset = 0
+
+    this.onlyShowCensored = !this.onlyShowCensored
+    WeiboService.getPostHashtagIndex(this.decodedHashtag,this.offset, pageSize, this.onlyShowCensored)    
+  }
+
   getNextPage() {
     this.setLoading(true)
     this.offset += pageSize;
-    WeiboService.getPostHashtagIndex(this.decodedHashtag,this.offset, pageSize)  
+    WeiboService.getPostHashtagIndex(this.decodedHashtag,this.offset, pageSize, this.onlyShowCensored)  
   }
+
+  getPostCount() {
+    if (!this.onlyShowCensored) 
+      return WeiboService.postHashtagIndex[this.decodedHashtag].posts.length
+    else
+      return WeiboService.postHashtagIndex[this.decodedHashtag].posts.filter(p => p.isCensored).length
+  }
+
   viewMoreDisplayState() {
-    if (this.posts.length > 0 && this.posts.length <= WeiboService.postHashtagIndex[this.decodedHashtag].posts.length)
+    if (this.posts.length > 0 && this.posts.length <= this.getPostCount())
       return ""
     else
       return "viewMoreHidden"
   }
+
+/*   toggleCensoredFilter() {
+    if (this.onlyShowCensored) {
+      this.onlyShowCensored = false
+      this.hashtags.length = 0
+      this.offset = 0
+      WeiboService.getHashtagIndex(this.offset, pageSize)
+    }
+    else {
+      this.onlyShowCensored = true
+      var censoredHashtags = WeiboService.censoredHashtags
+      this.hashtags=[...censoredHashtags]
+    }
+  }
+ */
   async setLoading(isLoading: boolean) {
     this.loading = isLoading
     /*
@@ -72,11 +105,11 @@ export class WeiboPosts {
             <sharing-utensil linkToShare={'http://weibot.saladface.xyz/search-results/'+encodeURIComponent(this.decodedHashtag.replace('#', '')).replace('%23', '')} text="%23WeiBlocked %23FreeSpeechChina"></sharing-utensil>
 
           </ion-buttons>
-          <ion-title>{this.decodedHashtag}</ion-title>
+          <ion-title>{this.decodedHashtag} - {WeiboService.hashtagIndex.filter(x => x.hashtag == this.decodedHashtag)[0].english}</ion-title>
         </ion-toolbar>
         <ion-toolbar>
         {this.posts.length > 0 ? 
-                  <ion-title>Loaded {this.posts.length} of {WeiboService.postHashtagIndex[this.decodedHashtag].posts.length} Posts</ion-title>
+                  <ion-title>Loaded {this.posts.length} of {this.getPostCount()} Posts</ion-title>
                   :
                   <ion-title>Loading... Please Wait</ion-title>
         }
@@ -105,7 +138,12 @@ export class WeiboPosts {
       expand="block" 
       fill="outline">View More...</ion-button>
 
-      </ion-content>     
+      </ion-content>,
+      
+      <ion-footer color="light">
+        <censored-filter censored={this.onlyShowCensored} onToggle={(e) => this.toggleCensoredFilter()}></censored-filter>
+      </ion-footer>
+
       ]
     );
   }

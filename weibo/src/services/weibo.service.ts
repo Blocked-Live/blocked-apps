@@ -4,7 +4,6 @@ import { environment } from '../helpers/environment';
 
 class WeiboServiceController {
 
-
   public censoredHashtagStrings = []
   public censoredHashtags = []
 
@@ -33,7 +32,8 @@ class WeiboServiceController {
     return post;
   }
 
-  getPostHashtagIndex(hashtag, offset, limit, forceRefresh = 0) {
+  
+  getPostHashtagIndex(hashtag, offset, limit, censoredOnly=false, forceRefresh = 0) {
     var index = this.postHashtagIndex[hashtag]
     if (!index) {
       this.postHashtagIndex[hashtag] = {posts: [], posts$: new BehaviorSubject<any>([])}
@@ -41,13 +41,36 @@ class WeiboServiceController {
     }
 
     if (index.posts.length == 0 || forceRefresh) {
-      this.generatePostIndexForHashtag(hashtag, offset, limit) //spins off a thread to get the data, which will update the observable when complete
+      this.generatePostIndexForHashtag(hashtag, offset, limit, censoredOnly) //spins off a thread to get the data, which will update the observable when complete
     } else {
-      index.posts$.next(index.posts.slice(offset, limit + offset))
+      var p= (!censoredOnly) ? index.posts : index.posts.filter(p => p.isCensored)
+
+      index.posts$.next(p.slice(offset, limit + offset))
     }
     return index.posts$
   }
 
+  //get post ids for a hashtag, and cross-reference with the censored post index
+  async generatePostIndexForHashtag(hashtag, offset, limit, censoredOnly=false) {
+    var customTags = [
+      {name:"App-Name", value: "weibot-search-weibs"},
+      {name: hashtag, value: 1}
+    ]
+    var postTxIds = await this.arweaveService.getTransactionsByTags(customTags)
+    
+    if (this.censoredPostIndex.length == 0)
+      await this.generateCensoredPostIndex
+
+    this.postHashtagIndex[hashtag].posts = postTxIds.map(id => {
+      return {
+        txid: id,
+        isCensored: this.censoredPostIndex.filter(cp => cp.txid == id).length > 0
+      }
+    })
+    var p= (!censoredOnly) ? this.postHashtagIndex[hashtag].posts : this.postHashtagIndex[hashtag].posts.filter(p => p.isCensored)
+    this.postHashtagIndex[hashtag].posts$.next(p.slice(offset, limit + offset))
+
+  }
 
   //gets an index of txids, removal type, and last time we checked for all posts
   //in the archive that are deleted or shadowbanned
@@ -77,26 +100,6 @@ class WeiboServiceController {
         }
       }) //this forces any UI state bound to this array to refresh
   }
-  //get post ids for a hashtag, and cross-reference with the censored post index
-  async generatePostIndexForHashtag(hashtag, offset, limit) {
-    var customTags = [
-      {name:"App-Name", value: "weibot-search-weibs"},
-      {name: hashtag, value: 1}
-    ]
-    var postTxIds = await this.arweaveService.getTransactionsByTags(customTags)
-    
-    if (this.censoredPostIndex.length == 0)
-      await this.generateCensoredPostIndex
-
-    this.postHashtagIndex[hashtag].posts = postTxIds.map(id => {
-      return {
-        txid: id,
-        isCensored: this.censoredPostIndex.filter(cp => cp.txid == id).length > 0
-      }
-    })
-    this.postHashtagIndex[hashtag].posts$.next(this.postHashtagIndex[hashtag].posts.slice(offset, limit + offset))
-
-  }
 
 
   async getCensoredHashtags(forceRefresh=false) {
@@ -111,7 +114,14 @@ class WeiboServiceController {
 
       //note that the index is now an array of arrays... [[hashtag, count],[hashtag, count]]
       this.censoredHashtagStrings = index.data.map(ht =>  ht[0])
-      this.censoredHashtags = index.data.map(ht => {return {hashtag: ht[0], count: ht[1], censored: true}}).sort((a, b) => (b.count - a.count))
+      this.censoredHashtags = index.data.map(ht => {
+        return {
+        hashtag: ht[0], 
+        count: ht[1], 
+        censored: true, 
+        english: ht[2]
+        }
+      }).sort((a, b) => (b.count - a.count))
     }
     return this.censoredHashtagStrings
   }
@@ -133,7 +143,8 @@ class WeiboServiceController {
         return {
           hashtag: ht[0],
           count: ht[1],
-          censored: this.censoredHashtagStrings.includes(ht[0])
+          censored: this.censoredHashtagStrings.includes(ht[0]),
+          english: ht[2]
         }
       } ) //this forces any UI state bound to this array to refresh
 

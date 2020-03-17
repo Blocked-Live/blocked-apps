@@ -120,8 +120,8 @@ export class WeiboViewer {
                               : ""
                             }
 
-                            <ion-router-link href={`weibo-viewer/${tag.hashtag}/posts`}>{tag.hashtag}</ion-router-link>
-
+                            <ion-router-link href={`weibo-viewer/${tag.hashtag}/posts`}>{tag.hashtag}</ion-router-link><br />
+                            {tag.english}
                           </ion-label>
                           <ion-badge slot="end">{tag.count}</ion-badge>
                     </ion-item>
@@ -136,15 +136,9 @@ export class WeiboViewer {
       </ion-content>    
       ,
       <ion-footer color="light">
-      <ion-toolbar>
-        <ion-toggle slot="start" onIonChange={(e) => {this.toggleCensoredFilter(); e.preventDefault()}}></ion-toggle> 
-
-        <ion-title>
-        Censored Tags Only
-      </ion-title>
-
-          </ion-toolbar>
-    </ion-footer>
+        <censored-filter label="Censored Topics" censored={this.onlyShowCensored} onToggle={(e) => this.toggleCensoredFilter()}>
+        </censored-filter>
+      </ion-footer>
 
       ]
     );
